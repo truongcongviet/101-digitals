@@ -7,6 +7,11 @@ type UpstreamErrorPayload = {
   error?: string;
 };
 
+type TokenResult = {
+  accessToken: string;
+  expiresIn?: number;
+};
+
 export class UpstreamApiError extends Error {
   constructor(
     message: string,
@@ -49,7 +54,7 @@ async function assertOk(response: Response, fallback: string) {
   return payload;
 }
 
-export async function exchangePasswordForToken(input: LoginInput): Promise<string> {
+export async function exchangePasswordForToken(input: LoginInput): Promise<TokenResult> {
   const body = new URLSearchParams({
     client_id: getRequiredEnv("OAUTH_CLIENT_ID"),
     client_secret: getRequiredEnv("OAUTH_CLIENT_SECRET"),
@@ -74,7 +79,13 @@ export async function exchangePasswordForToken(input: LoginInput): Promise<strin
     throw new UpstreamApiError("Token response did not include access_token", response.status, payload);
   }
 
-  return String(payload.access_token);
+  const tokenPayload = payload as { access_token: unknown; expires_in?: unknown };
+  const expiresIn = Number(tokenPayload.expires_in);
+
+  return {
+    accessToken: String(tokenPayload.access_token),
+    expiresIn: Number.isFinite(expiresIn) ? expiresIn : undefined
+  };
 }
 
 export async function fetchOrgToken(accessToken: string): Promise<string> {

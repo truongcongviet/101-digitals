@@ -1,9 +1,28 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchOrgToken } from "@/lib/api-client";
+import { exchangePasswordForToken, fetchOrgToken } from "@/lib/api-client";
+import { getSessionCookieMaxAge } from "@/lib/auth";
 
-describe("fetchOrgToken", () => {
+describe("api client auth", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it("returns access token expiry metadata from the token response", async () => {
+    process.env.OAUTH_CLIENT_ID = "client-id";
+    process.env.OAUTH_CLIENT_SECRET = "client-secret";
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ access_token: "access-token", expires_in: 300 }), {
+        status: 200
+      })
+    );
+
+    await expect(
+      exchangePasswordForToken({ username: "94756921275", password: "secret" })
+    ).resolves.toEqual({
+      accessToken: "access-token",
+      expiresIn: 300
+    });
   });
 
   it("extracts org token from the Postman profile wrapper shape", async () => {
@@ -30,5 +49,9 @@ describe("fetchOrgToken", () => {
       status: 502,
       message: "User profile did not include an organization token"
     });
+  });
+
+  it("sets session cookies to expire before the upstream access token", () => {
+    expect(getSessionCookieMaxAge(300)).toBe(240);
   });
 });

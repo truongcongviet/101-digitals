@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { exchangePasswordForToken, fetchOrgToken, UpstreamApiError } from "@/lib/api-client";
-import { setAuthCookies } from "@/lib/auth";
+import { getSessionCookieMaxAge, setAuthCookies } from "@/lib/auth";
 import { loginSchema } from "@/lib/validations";
 
 export async function POST(request: Request) {
@@ -15,11 +15,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    const accessToken = await exchangePasswordForToken(parsed.data);
+    const { accessToken, expiresIn } = await exchangePasswordForToken(parsed.data);
     const orgToken = await fetchOrgToken(accessToken);
     const response = NextResponse.json({ ok: true });
 
-    setAuthCookies(response, { accessToken, orgToken });
+    setAuthCookies(response, { accessToken, orgToken }, { maxAge: getSessionCookieMaxAge(expiresIn) });
     return response;
   } catch (error) {
     if (error instanceof UpstreamApiError) {

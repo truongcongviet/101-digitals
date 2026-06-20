@@ -81,6 +81,11 @@ export function InvoiceForm() {
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        window.location.assign("/login?next=/invoices/new");
+        return;
+      }
+
       const payload = (await response.json().catch(() => null)) as
         | { message?: string; details?: unknown }
         | null;
