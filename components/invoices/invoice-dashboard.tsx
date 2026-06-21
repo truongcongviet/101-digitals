@@ -46,6 +46,9 @@ export function InvoiceDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceRecord | null>(null);
+  const [selectedInvoiceDetail, setSelectedInvoiceDetail] = useState<unknown>(null);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
 
   const totalPages = Math.max(1, Math.ceil(result.total / query.pageSize));
 
@@ -85,7 +88,7 @@ export function InvoiceDashboard() {
         id: "actions",
         cell: ({ row }) => {
           const invoice = row.original;
-          const id = toDisplayText(invoice.id ?? invoice.invoiceId, "");
+          const id = getInvoiceId(invoice);
           const copyValue = toDisplayText(invoice.invoiceNumber ?? invoice.invoiceReference ?? id, "");
 
           return (
@@ -179,7 +182,40 @@ export function InvoiceDashboard() {
   }
 
   async function openInvoiceDetail(invoice: InvoiceRecord) {
+    const invoiceId = getInvoiceId(invoice);
+
     setSelectedInvoice(invoice);
+    setSelectedInvoiceDetail(null);
+    setDetailError(null);
+
+    if (!invoiceId) {
+      setIsDetailLoading(false);
+      setDetailError("Invoice detail is unavailable because the list response did not include an invoice id.");
+      return;
+    }
+
+    setIsDetailLoading(true);
+
+    try {
+      const response = await fetch(`/api/invoices/${encodeURIComponent(invoiceId)}`, {
+        cache: "no-store"
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { message?: string } | null;
+        if (response.status === 401) {
+          window.location.href = "/login?next=/";
+          return;
+        }
+        throw new Error(payload?.message ?? "Unable to load invoice detail");
+      }
+
+      setSelectedInvoiceDetail(await response.json());
+    } catch (err) {
+      setDetailError(`${(err as Error).message}. Showing data from the invoice list.`);
+    } finally {
+      setIsDetailLoading(false);
+    }
   }
 
   return (
@@ -352,13 +388,23 @@ export function InvoiceDashboard() {
       {selectedInvoice ? (
         <InvoiceDetailModal
           invoice={selectedInvoice}
+          detail={selectedInvoiceDetail}
+          isLoading={isDetailLoading}
+          error={detailError}
           onClose={() => {
             setSelectedInvoice(null);
+            setSelectedInvoiceDetail(null);
+            setDetailError(null);
+            setIsDetailLoading(false);
           }}
         />
       ) : null}
     </div>
   );
+}
+
+function getInvoiceId(invoice: InvoiceRecord) {
+  return toDisplayText(invoice.id ?? invoice.invoiceId, "");
 }
 
 function normalizeInvoiceList(payload: unknown, pageNum: number, pageSize: number): InvoiceListResult {

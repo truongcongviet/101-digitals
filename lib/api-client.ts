@@ -136,6 +136,21 @@ export async function fetchInvoices(
   return assertOk(response, "Unable to fetch invoices");
 }
 
+export async function fetchInvoiceDetail(
+  invoiceId: string,
+  session: { accessToken: string; orgToken: string }
+) {
+  const response = await fetch(
+    `${getApiBaseUrl()}/invoice-service/1.0.0/invoices/${encodeURIComponent(invoiceId)}`,
+    {
+      headers: authorizedHeaders(session),
+      cache: "no-store"
+    }
+  );
+
+  return assertOk(response, "Unable to fetch invoice detail");
+}
+
 export async function createInvoice(
   input: CreateInvoiceInput,
   session: { accessToken: string; orgToken: string }

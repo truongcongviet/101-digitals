@@ -8,12 +8,16 @@ import type { InvoiceRecord } from "@/types/invoice";
 type InvoiceDetailModalProps = {
   invoice: InvoiceRecord;
   detail?: unknown;
+  isLoading?: boolean;
+  error?: string | null;
   onClose: () => void;
 };
 
 export function InvoiceDetailModal({
   invoice,
   detail,
+  isLoading = false,
+  error,
   onClose
 }: InvoiceDetailModalProps) {
   const source = normalizeDetail(detail) ?? invoice;
@@ -56,6 +60,9 @@ export function InvoiceDetailModal({
             <X size={18} aria-hidden="true" />
           </button>
         </div>
+
+        {isLoading ? <div className="inline-status">Loading latest invoice detail...</div> : null}
+        {error ? <div className="inline-warning">{error}</div> : null}
 
         <div className="detail-grid">
           <DetailItem label="Status">
@@ -195,6 +202,11 @@ function normalizeDetail(detail: unknown) {
 
   const record = detail as Record<string, unknown>;
   const data = record.data;
+
+  if (Array.isArray(data)) {
+    const firstItem = data[0];
+    return firstItem && typeof firstItem === "object" ? (firstItem as Record<string, unknown>) : undefined;
+  }
 
   if (data && typeof data === "object") {
     return data as Record<string, unknown>;

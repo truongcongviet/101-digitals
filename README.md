@@ -72,9 +72,11 @@ yarn build
 - Protected dashboard routes through middleware and server layout checks.
 - Invoice list as the default authenticated landing page.
 - Search, status/date filters, sorting, pagination.
+- Invoice detail route and modal, with list data fallback when the upstream detail endpoint is unavailable.
 - Create invoice form with exactly one line item.
 - Server-side validation for login, invoice query, and invoice creation.
 - Create-invoice payload aligned with `SimpleInvoice_101Digital.postman_collection.json`.
+- `.env.example` with placeholder-only environment variables.
 - Security headers in `next.config.mjs`.
 - Unit tests for core validation and payload mapping.
 

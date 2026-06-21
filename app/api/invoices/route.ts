@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createInvoice, fetchInvoices, UpstreamApiError } from "@/lib/api-client";
-import { clearAuthCookies, getServerSession } from "@/lib/auth";
+import { getServerSession } from "@/lib/auth";
+import { upstreamErrorResponse } from "@/lib/route-responses";
 import { createInvoiceInputSchema, invoiceQuerySchema } from "@/lib/validations";
 
 export async function GET(request: Request) {
@@ -59,17 +60,4 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ message: "Unexpected invoice create error" }, { status: 500 });
   }
-}
-
-function upstreamErrorResponse(error: UpstreamApiError) {
-  const response = NextResponse.json(
-    { message: error.message, details: error.payload },
-    { status: error.status }
-  );
-
-  if (error.status === 401) {
-    clearAuthCookies(response);
-  }
-
-  return response;
 }
